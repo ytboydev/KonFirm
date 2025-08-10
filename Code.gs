@@ -292,6 +292,9 @@ function handleSaveColumns(e) {
     if (!session || !session.authenticated) {
       return { error: 'غير مصرح لك بالوصول' };
     }
+    if (session.user.role !== 'admin') {
+      return { error: 'غير مصرح لك بالوصول - يتطلب دور المسؤول' };
+    }
 
     const columnsData = JSON.parse(e.parameter.columns || '[]');
     const result = ConfigModel.saveColumnsConfig(columnsData, session.user);
@@ -350,6 +353,9 @@ const OrderModel = {
 
   createOrder: function(orderData, user) {
     try {
+      if (!user || user.role !== 'admin') {
+        throw new Error('Unauthorized: Admin role required to create orders.');
+      }
       const spreadsheet = SpreadsheetApp.openById(SPREADSHEET_ID);
       const sheet = spreadsheet.getSheetByName(ORDERS_SHEET_NAME);
       
@@ -372,6 +378,9 @@ const OrderModel = {
 
   updateOrder: function(orderData, user) {
     try {
+      if (!user || user.role !== 'admin') {
+        throw new Error('Unauthorized: Admin role required to update orders.');
+      }
       const spreadsheet = SpreadsheetApp.openById(SPREADSHEET_ID);
       const sheet = spreadsheet.getSheetByName(ORDERS_SHEET_NAME);
       
@@ -425,6 +434,9 @@ const OrderModel = {
 
   deleteOrder: function(orderId, user) {
     try {
+      if (!user || user.role !== 'admin') {
+        throw new Error('Unauthorized: Admin role required to delete orders.');
+      }
       const spreadsheet = SpreadsheetApp.openById(SPREADSHEET_ID);
       const sheet = spreadsheet.getSheetByName(ORDERS_SHEET_NAME);
       
@@ -501,13 +513,6 @@ const UserModel = {
         const isActive = row[4];
 
         if (storedUsername === username && isActive) {
-          if (storedPassword === password) {
-            return {
-              username: storedUsername,
-              role: role,
-              lastLogin: new Date()
-            };
-          }
 
           const hashedInputPassword = Utilities.computeDigest(
             Utilities.DigestAlgorithm.SHA_256, 
